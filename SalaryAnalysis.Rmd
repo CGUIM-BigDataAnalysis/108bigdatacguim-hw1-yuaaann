@@ -1,7 +1,7 @@
 ---
 title: "108-2 大數據分析方法 作業一"
 output: github_document
-author: put your name here
+author: 張元晏
 ---
 
 搞不清楚各行各業的薪資差異嗎? 念研究所到底對第一份工作的薪資影響有多大? CP值高嗎? 透過分析**初任人員平均經常性薪資**- （107年）https://data.gov.tw/dataset/6647 （104-105年）http://ipgod.nchc.org.tw/dataset/a17000000j-020066 ，可初步了解台灣近幾年各行各業、各學歷的起薪。
@@ -10,56 +10,125 @@ author: put your name here
 
 ### 資料匯入與處理
 ```{r dataload}
-library(readr)
+library(jsonlite)
 library(dplyr)
+library(knitr)
+library(readr)
+Salary104 <- read_csv("http://ipgod.nchc.org.tw/dataset/b6f36b72-0c4a-4b60-9254-1904e180ddb1/resource/98d5094d-7481-44b5-876a-715a496f922c/download/")
 
+Salary107<- read_csv("~/Downloads/A17000000J-020066-Qod/107年各教育程度別初任人員每人每月經常性薪資─按大職類分.csv")
+
+Salary104$大職業別<-NULL
+Salary104$大職業別<-Salary107$大職業別
+#對照過104及107年的資料他們的大職業別都一樣，順序也相同，只是有一些字元不同，因此用這種方式做更改
+Salary104107<-inner_join(Salary104,Salary107,by=c("大職業別"))
+Salary104107$`大學-薪資.x`<-as.numeric(Salary104107$`大學-薪資.x`)
+Salary104107$`大學-薪資.y`<-as.numeric(Salary104107$`大學-薪資.y`)
 ```
 
 ### 107年度薪資較104年度薪資高的職業有哪些? 
 ```{r compare103106}
-#這是R Code Chunk
+Salary_up<-filter(Salary104107,`大學-薪資.x`<`大學-薪資.y`)
+kable(Salary_up)
+Salary_up$`107年度大學畢業薪資 / 104年度大學畢業薪資`<-Salary_up$`大學-薪資.y`/ Salary_up$`大學-薪資.x`
+Salary_up_top10<-head(Salary_up[order(Salary_up$`107年度大學畢業薪資 / 104年度大學畢業薪資`,decreasing = T),],10)
+kable(Salary_up_top10)
 ```
-
+經過上網查詢與分析，第一個原因為勞動部每年調漲薪資
+，從104年每月基本工資20,008元、每小時基本工資120元
+，到107年每月基本工資為22,000元、每小時基本工資140
+元。第二個原因為有關人員之空缺數量減少，人員的缺少
+，導致廠商調升經常性薪資，或是因正職空缺減少，且增
+加打工和不是正職的缺額，造成原正職之薪資有所漲幅。
+第三個原因為台灣的公司越來越普遍採取以績效為準的變
+動薪資計畫，以增加獎金給付做為薪資總額，但也導致工
+時拉長，若是用工時與薪資做比較的話，其實薪資成長的
+幅度並不大。
 ### 提高超過5%的的職業有哪些? 
 ```{r over5}
-#這是R Code Chunk
+Salary_up_5percent<-filter(Salary_up,`107年度大學畢業薪資 / 104年度大學畢業薪資`>1.05)
+kable(Salary_up_5percent)  
 ```
 
 ### 主要的職業種別是哪些種類呢?
 ```{r mainType}
-#這是R Code Chunk
+Salary_up_5percent_kind<-table(sapply(strsplit(Salary_up_5percent$大職業別,"-"),"[",1))
+kable(Salary_up_5percent_kind) 
 ```
-
+其中出現最多次的職業種別分別是不動產業、出版、影音製作、傳播及資通訊服務業、金融及保險業、藝術_娛樂及休閒服務業、運輸及倉儲業，這五種都是出現5次
 ## 男女同工不同酬現況分析
 
 男女同工不同酬一直是性別平等中很重要的問題，分析資料來源為103到106年度的大學畢業薪資。
 
 ### 104和107年度的大學畢業薪資資料，哪些行業男生薪資比女生薪資多?
 ```{r male}
-#這是R Code Chunk
+#104
+Salary104$`大學-女/男`<-as.numeric(Salary104$`大學-女/男`)
+s104_male_higher<-filter(Salary104,`大學-女/男`<100)
+kable(s104_male_higher) 
+s104_male_higher<-s104_male_higher[order(s104_male_higher$`大學-女/男`),]
+s104_male_higher_top10<-head(s104_male_higher,10)
+kable(s104_male_higher_top10)
+#107
+Salary107$`大學-女/男`<-as.numeric(Salary107$`大學-女/男`)
+s107_male_higher<-filter(Salary107,`大學-女/男`<100)
+kable(s107_male_higher) 
+s107_male_higher<-s107_male_higher[order(s107_male_higher$`大學-女/男`),]
+s107_male_higher_top10<-head(s107_male_higher,10)
+kable(s107_male_higher_top10)
 ```
 ### 哪些行業女生薪資比男生薪資多? 
 ```{r female}
-#這是R Code Chunk
+#104
+s104_female_higher<-filter(Salary104,`大學-女/男`>100)
+kable(s104_female_higher) 
+s104_female_higher<-s104_female_higher[order(s104_female_higher$`大學-女/男`),]
+s104_female_higher_top10<-head(s104_female_higher,10)
+kable(s104_female_higher_top10)
+#107
+s107_female_higher<-filter(Salary107,`大學-女/男`>100)
+kable(s107_female_higher) 
+s107_female_higher<-s107_female_higher[order(s107_female_higher$`大學-女/男`),]
+s107_female_higher_top10<-head(s107_female_higher,10)
+kable(s107_female_higher_top10)
 ```
-
+統計發現，幾乎沒有哪一個職業的薪資是女性高於男性，在依然有男主外女主內觀念的台灣來說，性別歧視是根深蒂固的，認為女性需要承擔較多家務和照顧責任，在無法兼顧工作時傾向於中斷就業。利用男性
+要養家、女性結婚或有小孩後為了照顧家庭會影響生產力等的說法，或基
+於個人性別偏好，提高男性或壓低女性的薪資。
 ## 研究所薪資差異
 
 以107年度的資料來看，哪個職業別念研究所最划算呢 (研究所學歷薪資與大學學歷薪資增加比例最多)?
  
 ```{r grad}
-#這是R Code Chunk
+Salary107$`研究所-薪資`<-as.numeric(Salary107$`研究所-薪資`)
+Salary107$`大學-薪資`<-as.numeric(Salary107$`大學-薪資`)
+Salary107$`研究所-薪資/大學-薪資`<-Salary107$`研究所-薪資`/Salary107$`大學-薪資`
+s107_gra_higher<-filter(Salary107,`研究所-薪資/大學-薪資`>1)
+kable(s107_gra_higher)
+s107_gra_higher_top10<-head(s107_gra_higher[order(s107_gra_higher$`研究所-薪資/大學-薪資`,decreasing = T),],10)
+kable(s107_gra_higher_top10)
 ```
-
+統計完前十名，會發現前十名多屬於需專業技術之職業，
+對於靠製造業為主的台灣來說，高階工程人才是必須的，
+再加上好的專業技術人員人才濟濟，每年都有近五成的空缺
+是工程師，導致只要讀了研究所，基本薪資就會提升至少一
+萬初，相比於文史哲和藝術相關產業，主要注重為作品及實質
+成效和經驗，市場空缺又少，導致起薪十分低。
+不過，最主要的原因還是市場的需求，台灣因科技產業的相對
+發達，有專業性質的工程師、製造類，皆都會因讀了研究所
+而起薪有較大的落差。
 ## 我有興趣的職業別薪資狀況分析
 
 ### 有興趣的職業別篩選，呈現薪資
 ```{r like}
-#這是R Code Chunk
+JobLike<-Salary107[grep("工業-專業人員|藝術_娛樂及休閒服務業-專業人員",Salary107$大職業別),]
+JobLike<-select(JobLike,大職業別,`大學-薪資`,`研究所-薪資`)
+kable(JobLike)
 ```
-
+跟我想像中的差不多，稍微低一點點而已，雖然我不太確定這邊的工業跟我所想的職業是不是同一種（ex:電機），但已經比現在的最低基本薪資高了10k算是還不錯，不過研究所畢業的薪資的部分我原本以為會有比較大的差距，沒想到只有5000。
 ### 這些職業別研究所薪資與大學薪資差多少呢？
 ```{r likeGrad}
-#這是R Code Chunk
+JobLike$"研究所薪資與大學薪資差"<-JobLike$`研究所-薪資`-JobLike$`大學-薪資`
+kable(JobLike)
 ```
-
+還是會想念研究所精進自己，感覺大學念完好像都還不是說非常的熟悉這個領域，還是有很多不足的地方，這筆資料也只是顯示出剛畢業的薪資的部分，有很多情況不會考慮到，例如會不會研究所出來加薪加得比較快、大學畢業比較難找工作......之類的，畢竟現在這個領域大部分都會唸研究所，只到大學的話可能已經輸很多人了
