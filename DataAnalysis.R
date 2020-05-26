@@ -1,5 +1,6 @@
 library(jsonlite)
 library(dplyr)
+library(knitr)
 
 library(readr)
 Salary104 <- read_csv("http://ipgod.nchc.org.tw/dataset/b6f36b72-0c4a-4b60-9254-1904e180ddb1/resource/98d5094d-7481-44b5-876a-715a496f922c/download/")
